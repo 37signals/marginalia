@@ -4,14 +4,17 @@ require 'socket'
 
 module Marginalia
   module Comment
-    mattr_accessor :components, :lines_to_ignore, :prepend_comment
+    mattr_accessor :components, :lines_to_ignore, :prepend_comment, :cache_comment
     Marginalia::Comment.components ||= [:application, :controller, :action]
+    Marginalia::Comment.cache_comment = false
 
     def self.update!(controller = nil)
+      self.cached_comment = nil
       self.marginalia_controller = controller
     end
 
     def self.update_job!(job)
+      self.cached_comment = nil
       self.marginalia_job = job
     end
 
@@ -20,6 +23,7 @@ module Marginalia
     end
 
     def self.construct_comment
+      return self.cached_comment if self.cache_comment && !self.cached_comment.nil?
       ret = String.new
       self.components.each do |c|
         component_value = self.send(c)
@@ -29,6 +33,7 @@ module Marginalia
       end
       ret.chop!
       ret = self.escape_sql_comment(ret)
+      self.cached_comment = ret if self.cache_comment
       ret
     end
 
@@ -44,15 +49,29 @@ module Marginalia
       str
     end
 
+    def self.clear_comment_cache!
+      self.cached_comment = nil
+    end
+
     def self.clear!
+      self.cached_comment = nil
       self.marginalia_controller = nil
     end
 
     def self.clear_job!
+      self.cached_comment = nil
       self.marginalia_job = nil
     end
 
     private
+      def self.cached_comment=(comment)
+        Thread.current[:marginalia_cached_comment] = comment
+      end
+
+      def self.cached_comment
+        Thread.current[:marginalia_cached_comment]
+      end
+
       def self.marginalia_controller=(controller)
         Thread.current[:marginalia_controller] = controller
       end

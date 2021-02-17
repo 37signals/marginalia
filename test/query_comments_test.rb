@@ -378,6 +378,41 @@ class MarginaliaTest < MiniTest::Test
     Marginalia::Comment.prepend_comment = nil
   end
 
+  def test_only_builds_comment_string_once_if_cached
+    Marginalia::Comment.cache_comment = true
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+    String.expects(:new).never
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+  ensure
+    Marginalia::Comment.clear_comment_cache!
+    Marginalia::Comment.cache_comment = false
+    String.unstub(:new)
+  end
+
+  def test_resets_cache_on_update
+    Marginalia::Comment.cache_comment = true
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+    Marginalia::Comment.update!
+    String.expects(:new).once.returns("")
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+  ensure
+    Marginalia::Comment.clear_comment_cache!
+    Marginalia::Comment.cache_comment = false
+    String.unstub(:new)
+  end
+
+  def test_resets_cache_on_clear
+    Marginalia::Comment.cache_comment = true
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+    Marginalia::Comment.clear!
+    String.expects(:new).once.returns("")
+    assert_equal "application:rails", Marginalia::Comment.construct_comment
+  ensure
+    Marginalia::Comment.clear_comment_cache!
+    Marginalia::Comment.cache_comment = false
+    String.unstub(:new)
+  end
+
   def teardown
     Marginalia.application_name = nil
     Marginalia::Comment.lines_to_ignore = nil
