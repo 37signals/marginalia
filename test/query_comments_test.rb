@@ -17,6 +17,10 @@ def adapter_pool_available?
   Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('3.2.19')
 end
 
+def database_role_available?
+  Gem::Version.new(ActiveRecord::VERSION::STRING) >= Gem::Version.new('6.0.0')
+end
+
 require "minitest/autorun"
 require "mocha/minitest"
 require 'logger'
@@ -243,6 +247,14 @@ class MarginaliaTest < MiniTest::Test
       Marginalia::Comment.components = [:db_host]
       API::V1::PostsController.action(:driver_only).call(@env)
       assert_match %r{/\*db_host:localhost}, @queries.first
+    end
+
+    if database_role_available?
+      def test_db_role
+        Marginalia::Comment.components = [:db_role]
+        API::V1::PostsController.action(:driver_only).call(@env)
+        assert_match %r{/\*db_role:writing}, @queries.first
+      end
     end
 
     def test_database

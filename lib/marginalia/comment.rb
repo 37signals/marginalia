@@ -157,6 +157,11 @@ module Marginalia
           end
         end
 
+        def self.db_role
+          return if marginalia_adapter.pool.nil?
+          ActiveRecord::Base.current_role
+        end
+
         def self.database
           if self.connection_config.present?
             self.connection_config[:database]
